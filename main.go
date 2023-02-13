@@ -26,13 +26,39 @@ func main() {
 	r := echo.New()
 	r.Validator = &CustomValidator{validator: validator.New()}
 
+	r.HTTPErrorHandler = func(err error, c echo.Context) {
+		report, ok := err.(*echo.HTTPError)
+		if !ok {
+			report = echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		if castedObj, ok := err.(validator.ValidationErrors); ok {
+			report.Code = http.StatusBadRequest
+			for _, err := range castedObj {
+				switch err.Tag() {
+				case "required":
+					report.Message = fmt.Sprintf("%s is required", err.Field())
+				case "email":
+					report.Message = fmt.Sprintf("%s is not valid email", err.Value())
+				case "gte":
+					report.Message = fmt.Sprintf("%s enum is invalid", err.Field())
+				case "lte":
+					report.Message = fmt.Sprintf("%s enum is invalid", err.Field())
+				}
+				break
+			}
+		}
+
+		c.JSON(report.Code, report)
+	}
+
 	r.Any("/user", func(c echo.Context) error {
 		u := new(User)
 		if err := c.Bind(u); err != nil {
-			return c.JSON(http.StatusInternalServerError, "cannot bind data")
+			return err
 		}
 		if err := c.Validate(u); err != nil {
-			return c.JSON(http.StatusBadRequest, "invalid request")
+			return err
 		}
 		return c.JSON(http.StatusOK, u)
 	})
