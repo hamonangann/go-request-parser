@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"net/http"
 )
 
@@ -24,6 +25,13 @@ func (cv *CustomValidator) Validate(i any) error {
 
 func main() {
 	r := echo.New()
+	r.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper:          nil,
+		Format:           "method=${method}, uri=${uri}, status=${status}\n",
+		CustomTimeFormat: "",
+		Output:           nil,
+	}))
+
 	r.Validator = &CustomValidator{validator: validator.New()}
 
 	r.HTTPErrorHandler = func(err error, c echo.Context) {
@@ -64,5 +72,5 @@ func main() {
 	})
 
 	fmt.Println("server started at :9000")
-	r.Start(":9000")
+	r.Logger.Fatal(r.Start(":9000"))
 }
