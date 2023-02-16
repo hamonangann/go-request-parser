@@ -6,6 +6,7 @@ This code is modified from [Novalagung Golang Basic C4-C6](https://dasarpemrogra
 
 1. Execute `go build` then `go run main.go`.
 2. Send a request (use cURL, Postman, etc)
+3. If port 9000 (default) is not usable, custom the port with --port or -p e.g `go run main.go -p 8765`
 
 ### Request-response example
 Given `curl -X GET localhost:9000/user?name=nito&email=nito@mail.com`, the server returns JSON below

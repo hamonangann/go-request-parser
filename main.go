@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"net/http"
+	"os"
 )
 
 // User role additional info: 1 for Admin, 2 for registered user, empty/0 for guest/visitor temp account
@@ -24,6 +26,11 @@ func (cv *CustomValidator) Validate(i any) error {
 }
 
 func main() {
+	app := kingpin.New("App", "Simple app")
+	portFlag := app.Flag("port", "Server port").Short('p').Default("9000").Int()
+
+	kingpin.MustParse(app.Parse(os.Args[1:]))
+
 	r := echo.New()
 	r.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper:          nil,
@@ -71,6 +78,8 @@ func main() {
 		return c.JSON(http.StatusOK, u)
 	})
 
-	fmt.Println("server started at :9000")
-	r.Logger.Fatal(r.Start(":9000"))
+	port := fmt.Sprintf(":%d", *portFlag)
+
+	fmt.Printf("server started at %s", port)
+	r.Logger.Fatal(r.Start(port))
 }
