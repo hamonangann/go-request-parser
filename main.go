@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin/v2"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/spf13/viper"
 	"net/http"
 	"os"
 )
@@ -27,11 +29,27 @@ func (cv *CustomValidator) Validate(i any) error {
 
 func main() {
 	app := kingpin.New("App", "Simple app")
-	portFlag := app.Flag("port", "Server port").Short('p').Default("9000").Int()
+	portFlag := app.Flag("port", "Server port").Short('p').Int()
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	r := echo.New()
+
+	// Send config
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		r.Logger.Fatal(err)
+	}
+
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Printf("Config changed: %s", e.Name)
+	})
+
 	r.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper:          nil,
 		Format:           "method=${method}, uri=${uri}, status=${status}\n",
@@ -79,6 +97,13 @@ func main() {
 	})
 
 	port := fmt.Sprintf(":%d", *portFlag)
+
+	if port == ":0" {
+		port = fmt.Sprintf(":%d", viper.GetInt("server.port"))
+	}
+	if port == ":0" {
+		port = ":9000"
+	}
 
 	fmt.Printf("server started at %s", port)
 	r.Logger.Fatal(r.Start(port))
