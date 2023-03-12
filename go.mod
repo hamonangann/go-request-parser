@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.3.1
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/validator/v10 v10.11.2
+	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/spf13/viper v1.15.0
 )

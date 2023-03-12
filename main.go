@@ -2,15 +2,20 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"net/http"
+	"os"
+
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/spf13/viper"
-	"net/http"
-	"os"
 )
+
+type M map[string]interface{}
 
 // User role additional info: 1 for Admin, 2 for registered user, empty/0 for guest/visitor temp account
 type User struct {
@@ -28,6 +33,8 @@ func (cv *CustomValidator) Validate(i any) error {
 }
 
 func main() {
+	tmpl := template.Must(template.ParseGlob("./*.html"))
+
 	app := kingpin.New("App", "Simple app")
 	portFlag := app.Flag("port", "Server port").Short('p').Int()
 
@@ -45,6 +52,12 @@ func main() {
 		r.Logger.Fatal(err)
 	}
 
+	// Load secret
+	err = godotenv.Load()
+	if err != nil {
+		r.Logger.Fatal(err.Error())
+	}
+
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Printf("Config changed: %s", e.Name)
@@ -55,6 +68,11 @@ func main() {
 		Format:           "method=${method}, uri=${uri}, status=${status}\n",
 		CustomTimeFormat: "",
 		Output:           nil,
+	}))
+
+	r.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "header: " + os.Getenv("CSRFTokenHeader"),
+		ContextKey:  os.Getenv("CSRFKey"),
 	}))
 
 	r.Validator = &CustomValidator{validator: validator.New()}
@@ -94,6 +112,21 @@ func main() {
 			return err
 		}
 		return c.JSON(http.StatusOK, u)
+	})
+
+	r.GET("/form", func(c echo.Context) error {
+		data := make(M)
+		data[os.Getenv("CSRFKey")] = c.Get(os.Getenv(("CSRFKey")))
+		return tmpl.Execute(c.Response(), data)
+	})
+
+	r.POST("/sendform", func(c echo.Context) error {
+		data := make(M)
+		if err := c.Bind(&data); err != nil {
+			return err
+		}
+
+		return c.Redirect(http.StatusOK, fmt.Sprintf("/user=%s&email=%s", data["user"], data["email"]))
 	})
 
 	port := fmt.Sprintf(":%d", *portFlag)
