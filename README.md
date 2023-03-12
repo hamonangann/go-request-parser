@@ -21,4 +21,4 @@ with status code 200 OK
 
 ### Update log
 
-1. Add form with CSRF feature
+1. Add form with CSRF feature. To use CSRF, make `.env` file, use `.env.example` as template

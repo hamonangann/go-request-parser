@@ -71,7 +71,7 @@ func main() {
 	}))
 
 	r.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup: "header: " + os.Getenv("CSRFTokenHeader"),
+		TokenLookup: "header:" + os.Getenv("CSRFTokenHeader"),
 		ContextKey:  os.Getenv("CSRFKey"),
 	}))
 
@@ -126,7 +126,7 @@ func main() {
 			return err
 		}
 
-		return c.Redirect(http.StatusOK, fmt.Sprintf("/user=%s&email=%s", data["user"], data["email"]))
+		return c.Redirect(http.StatusOK, fmt.Sprintf("/user?name=%s&email=%s", data["name"], data["email"]))
 	})
 
 	port := fmt.Sprintf(":%d", *portFlag)
